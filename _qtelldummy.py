@@ -1,5 +1,5 @@
 """
-This is a Qtell replacement module.
+This is a Qtell replacement module, it does not support Transliteration/unicode.
 """
 class QtellDummy():
     """

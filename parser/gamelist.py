@@ -43,7 +43,7 @@ class GameList(object):
     """
     
     
-    def __init__(self, icsbot, always_trigger_ending=True, get_games=True):
+    def __init__(self, icsbot, always_trigger_ending=True, get_games=True, write_to_user=True):
         """Use always_trigger_ending to get an game ending event even if bot
         did not see game start. Note then in this case _variant_, start_time
         and rated are set to None (we cannot get the info directly).
@@ -68,9 +68,26 @@ class GameList(object):
         
         self._icsbot.reg_comm(reg_start, self._start)
         self._icsbot.reg_comm(reg_end, self._end)
+        
+        self._users = icsbot['users']
+        
+        self._sgames.register('start_time', self.add_usr_info_start)
+        self._sgames.register('end_time', self.add_usr_info_end)
         if get_games:
             self._icsbot.execute('games', self._grab_games)
         
+    
+    def _add_usr_info_start(self, game, key, old, new):
+        self.users[game['white']]['game'] = game
+        self.users[game['black']]['game'] = game
+        
+    def _add_usr_info_end(self, game, key, old, new):
+        if game['start_time'] is None:
+            # the game is an adjudicated game, or a ghost game we could not know
+            # about...
+            return
+        self.users[game['white']]['game'] = None
+        self.users[game['black']]['game'] = None
     
     def _start(self, matches):
         t = time.time()
@@ -202,3 +219,4 @@ class GameList(object):
             self._games.remove(game)
         except:
             pass
+            

@@ -28,6 +28,14 @@ All sending things support use_next, so you can have it ignore the height.
 (set it to 9999 for that qtell.)
 """
 
+try:
+    import unidecode as _unidecode
+except:
+    print 'No unidecode found, will not try to transliterate utf-8'
+    print 'To get unidecode search for it on pypi, this function is not needed!'
+    _unidecode = None
+
+
 class Qtell(object):
     _HEADER_LEN = 0
     NEXT_NOTE = '\\nPlease tell me next to get more.'
@@ -38,7 +46,7 @@ class Qtell(object):
         self.HEIGHT = height
         self.users = users
         
-
+    
     def set_header(self, header):
         if not header:
             self.__class__._HEADER = None
@@ -48,10 +56,12 @@ class Qtell(object):
             _HEADER_LEN = 0
         else:
             _HEADER_LEN = 1 + self.__class__._HEADER.count('\\n')
-
+    
+    
     def set_next_note(self, next):
         self.__class__.NEXT_NOTE = next
-
+    
+    
     def clear(self, user):
         """
         Arbitrary command that just deletes the users qtell_buffer.
@@ -63,11 +73,17 @@ class Qtell(object):
         return self.split(user, data, use_next=use_next)
 
 
-    def split(self, user, data, use_next=True):
+    def split(self, user, data, use_next=True, transliterate=False):
         """
         split(handle/user, data). Returns same as send(handle/user) which
         gives a generator object over things that need to be send to FICS.
         """
+        if type(data) != unicode:
+            data = unicode(data, 'utf-8')
+        if transliterate and _unidecode is not None:
+            # Make sure we have unicode
+            data =  _unidecode.unidecode(data.encode('utf-8').decode('utf-8'))
+        
         lines = self._auto_split(data)
         if type(user) is str:
             if self.users is None:
@@ -80,9 +96,13 @@ class Qtell(object):
             
             
     def _auto_split(self, text):
-        parts = str(text).split('\n')
+        if type(text) != unicode:
+            text = unicode(text, 'utf-8')
+        parts = text.split('\n')
         lines = []
         for part in parts:
+            part = part.strip('\r')
+            
             words  = part.split(' ')
             line_length = 1
             line = []
@@ -112,7 +132,7 @@ class Qtell(object):
         return lines
 
 
-    def send_list(self, user, data, use_next=True):
+    def send_list(self, user, data, use_next=True, transliterate=False):
         """
         send_list(handle/user, data (list/iterator of strings))
         Accepts a list of strings and replaces all \\n's with \\\\n's and returns
@@ -122,6 +142,11 @@ class Qtell(object):
         data = (i.replace('\n', '\\n') for i in data)
         if type(user) is str:
             user = users[user]
+        
+        if transliterate and _unidecode is not None:
+            # Transliterate all:
+            data = (_unidecode.unidecode(unicode(i, 'utf-8')) for i in data)
+        
         user['qtell_buffer'] = data
         return self._send(user, use_next=use_next)
 
@@ -154,13 +179,18 @@ class Qtell(object):
             first = True
         else:
             first = False
-            
+        
         if not user.items.has_key('qtell_buffer') or not user.items['qtell_buffer']:
             yield 'qtell %s Nothing more to show.' % user['handle']
             return
-    
+        
         # Careful, qtell_buffer is an iterator, not a list, accessing directly here.
         for line in user.items['qtell_buffer']:
+            if type(line) is unicode:
+                # If we encode as utf-8, the len function will return the byte
+                # length we need for this function.
+                line = line.encode('utf-8')
+            
             length += len(line) + 2
         
             # 999 to make sure that it cannot be longer then 1024 characters.

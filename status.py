@@ -84,7 +84,7 @@ class Status(object):
         # Lets make sure that all users are correctly set to offline too.
         meantime_change = self._users.online.difference(online)
         for user in meantime_change:
-            usr['online'] = False
+            user['online'] = False
         
         self._users.online = online
 

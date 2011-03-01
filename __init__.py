@@ -88,7 +88,7 @@ class IcsBot(object):
     timezone to GMT for simplicity.
     """
 
-    def __init__(self, qtell_dummy=False, qtell_width=78, interface='seberg\'s base bot.', unmatched_log=None, tell_logger=None):
+    def __init__(self, qtell_dummy=False, qtell_width=78, interface='seberg\'s base bot.', unmatched_log=None, tell_logger=None, help_command='help'):
         """Optional arguments:
             o qtell_dummy=False. Set to true if qtells are not possible.
             o qtell_width=78. Default Qtell widths. (ignored with dummy.)
@@ -123,7 +123,7 @@ class IcsBot(object):
             import _qtelldummy
             self.qtell = _qtelldummy.QtellDummy()
         
-        self._tells = tells.PrivateTells(self, tell_logger)
+        self._tells = tells.PrivateTells(self, tell_logger=tell_logger, help_command=help_command)
         # Provide access to self._tells register/unregister functions:
         self.reg_tell = self._tells.register
         self.deco_tell = self._tells.decorate

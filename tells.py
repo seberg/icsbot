@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+#-*- coding:utf-8 -*-
+
 """
 Module to include a basic tell parsing functionality. As usually, it defines
 the a register and unregister tell handlers.
@@ -7,7 +10,7 @@ import os
 import re
 
 class PrivateTells(object):
-    def __init__(self, icsbot=None, tell_logger=None):
+    def __init__(self, icsbot=None, tell_logger=None, help_command='help'):
         """Initialize Tells class with icsbot instance.
         
         (command_string, execution_function, priviledge_check=lambda *arg: True)
@@ -33,9 +36,10 @@ class PrivateTells(object):
         """
 
         self._registered = {'=commands': (self._listcommands, lambda *arg: True),
-                            'help': (self._help, lambda *arg: True),
+                            help_command: (self._help, lambda *arg: True),
                             'next': (self._next, lambda *arg: True)}
         
+        self.help_command = help_command
         self.tell_logger = tell_logger
         self._icsbot = icsbot
         self._users = self._icsbot['users']
@@ -84,7 +88,7 @@ class PrivateTells(object):
             return self.qtell.split(usr, 'No corresponding command found. Please use'\
                                     ' the =commands command to get a list of '\
                                     'all commands that are available to you. '\
-                                    'Or try the helpfiles.')
+                                    'Or try the helpfiles (%s command).' % self.help_command)
         return matches[0][1](usr, args, tags)
         
     
@@ -133,6 +137,10 @@ class PrivateTells(object):
             h = args.split(None, 1)[0].lower()
 
         try:
+            if os.path.sep in h:
+                # We can't have users use ../, etc, just act as if the file
+                # does not exist, may the user think it wroked, ha!
+                raise IOError
             help_file = file('help'+os.path.sep+'%s.txt' % h)
         except IOError:
             if h in self._registered:
@@ -144,7 +152,9 @@ class PrivateTells(object):
                     return self.qtell.split(usr, s.rstrip())
             return self.qtell.split(usr, 'Helpfile "%s" was not found' % h)
         
-        return self.qtell.split(usr, help_file.read().rstrip())
+        help_text = help_file.read()
+        
+        return self.qtell.split(usr, help_text, transliterate=True)
         
     
     def _next(self, usr, args, tags):
