@@ -71,23 +71,23 @@ class GameList(object):
         
         self._users = icsbot['users']
         
-        self._sgames.register('start_time', self.add_usr_info_start)
-        self._sgames.register('end_time', self.add_usr_info_end)
+        self._sgames.register('start_time', self._add_usr_info_start)
+        self._sgames.register('end_time', self._add_usr_info_end)
         if get_games:
             self._icsbot.execute('games', self._grab_games)
         
     
     def _add_usr_info_start(self, game, key, old, new):
-        self.users[game['white']]['game'] = game
-        self.users[game['black']]['game'] = game
+        self._users[game['white']]['game'] = game
+        self._users[game['black']]['game'] = game
         
     def _add_usr_info_end(self, game, key, old, new):
         if game['start_time'] is None:
             # the game is an adjudicated game, or a ghost game we could not know
             # about...
             return
-        self.users[game['white']]['game'] = None
-        self.users[game['black']]['game'] = None
+        self._users[game['white']]['game'] = None
+        self._users[game['black']]['game'] = None
     
     def _start(self, matches):
         t = time.time()
